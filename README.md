@@ -207,6 +207,8 @@ Les données météorologiques sont soumises aux conditions d'utilisation de Mé
 
 **PetiK** — © 2026
 
+Ce projet a été développé avec l'aide de **Grok** (xAI), assistant IA intégré à Cursor, pour la conception, l'implémentation et les itérations de l'application.
+
 ---
 
 ## Licence
