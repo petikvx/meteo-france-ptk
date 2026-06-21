@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#4f9cf9" />
+    <meta name="description" content="Prévisions météorologiques via l'API Météo France" />
+    <title>Météo France</title>
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" href="/icons/icon-192.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <div class="header-top">
+          <div class="header-brand">
+            <span class="logo" aria-hidden="true">☁</span>
+            <div>
+              <h1>Météo France</h1>
+              <p class="subtitle">Prévisions & stations</p>
+            </div>
+          </div>
+          <div class="header-actions">
+            <button class="btn-icon" id="themeToggle" type="button" title="Changer de thème" aria-label="Changer de thème">🌙</button>
+            <button class="btn-icon" id="geoBtn" type="button" title="Ma position" aria-label="Utiliser ma position">📍</button>
+          </div>
+        </div>
+
+        <nav class="main-nav" id="mainNav" role="tablist">
+          <button class="nav-tab active" data-view="forecast" role="tab" aria-selected="true">Prévisions</button>
+          <button class="nav-tab" data-view="stations" role="tab" aria-selected="false">Stations</button>
+        </nav>
+
+        <form class="search-form" id="searchForm" role="search">
+          <div class="search-wrapper">
+            <input
+              type="search"
+              id="searchInput"
+              placeholder="Rechercher une ville…"
+              autocomplete="off"
+              aria-label="Rechercher une ville"
+            />
+            <ul class="suggestions" id="suggestions" hidden></ul>
+          </div>
+          <button type="submit" class="btn-search">Rechercher</button>
+        </form>
+
+        <div class="favorites-bar hidden" id="favoritesBar">
+          <span class="favorites-label">Favoris</span>
+          <div class="favorites-list" id="favoritesList"></div>
+        </div>
+      </header>
+
+      <main id="main">
+        <div id="forecastView">
+        <section class="vigilance-block" id="vigilanceSection">
+          <div class="vigilance-block-header">
+            <h3>Vigilance météo</h3>
+            <a href="https://vigilance.meteofrance.fr" target="_blank" rel="noopener noreferrer" class="vigilance-link">
+              vigilance.meteofrance.fr
+            </a>
+          </div>
+          <div class="vigilance-row">
+            <div class="alerts-dept hidden" id="alertsDept">
+              <p class="vigilance-subtitle">Alertes pour votre département</p>
+              <div class="alerts-list" id="alertsList"></div>
+            </div>
+            <div class="vigilance-maps">
+            <figure class="vigilance-card">
+              <figcaption>Aujourd'hui</figcaption>
+              <a href="https://vigilance.meteofrance.fr" target="_blank" rel="noopener noreferrer">
+                <img class="js-vigilance-today" src="/api/vigilance/thumbnail?day=today" alt="Vigilance aujourd'hui" width="220" height="220" loading="eager" />
+              </a>
+            </figure>
+            <figure class="vigilance-card">
+              <figcaption>Demain</figcaption>
+              <a href="https://vigilance.meteofrance.fr/fr/demain" target="_blank" rel="noopener noreferrer">
+                <img class="js-vigilance-tomorrow" src="/api/vigilance/thumbnail?day=tomorrow" alt="Vigilance demain" width="220" height="220" loading="eager" />
+              </a>
+            </figure>
+            </div>
+          </div>
+        </section>
+
+        <section class="welcome" id="welcome">
+          <div class="welcome-icon" aria-hidden="true">🌤</div>
+          <h2>Bienvenue</h2>
+          <p>
+            Recherchez une ville, utilisez votre position ou consultez vos favoris
+            pour accéder aux prévisions et aux observations des stations.
+          </p>
+          <div class="quick-cities" id="quickCities">
+            <button class="chip" data-city="Paris">Paris</button>
+            <button class="chip" data-city="Lyon">Lyon</button>
+            <button class="chip" data-city="Marseille">Marseille</button>
+            <button class="chip" data-city="Bordeaux">Bordeaux</button>
+            <button class="chip" data-city="Toulouse">Toulouse</button>
+          </div>
+        </section>
+
+        <div class="skeleton hidden" id="skeleton">
+          <div class="sk-card">
+            <div class="sk-line sk-title"></div>
+            <div class="sk-line sk-sub"></div>
+            <div class="sk-temp"></div>
+            <div class="sk-details">
+              <div class="sk-box"></div>
+              <div class="sk-box"></div>
+              <div class="sk-box"></div>
+              <div class="sk-box"></div>
+            </div>
+          </div>
+          <div class="sk-row">
+            <div class="sk-day"></div>
+            <div class="sk-day"></div>
+            <div class="sk-day"></div>
+            <div class="sk-day"></div>
+            <div class="sk-day"></div>
+          </div>
+        </div>
+
+        <div class="error hidden" id="error" role="alert"></div>
+        <div class="offline-banner hidden" id="offlineBanner" role="status">
+          Mode hors ligne — dernières données en cache affichées
+        </div>
+
+        <div class="weather hidden" id="weather">
+          <section class="current-card" id="currentCard"></section>
+
+          <section class="prob-section hidden" id="probSection">
+            <h3>Probabilités</h3>
+            <div class="prob-grid" id="probGrid"></div>
+          </section>
+
+          <section class="charts-section hidden" id="chartsSection">
+            <div class="section-header">
+              <h3>Graphiques</h3>
+              <div class="range-toggle" id="chartRangeToggle" role="group" aria-label="Période du graphique">
+                <button type="button" class="range-btn active" data-range="24">24 h</button>
+                <button type="button" class="range-btn" data-range="48">48 h</button>
+              </div>
+            </div>
+            <div id="chartsContainer"></div>
+          </section>
+
+          <section class="rain-section hidden" id="rainSection">
+            <h3>Pluie dans l'heure</h3>
+            <div class="rain-timeline" id="rainTimeline"></div>
+          </section>
+
+          <section class="daily-section">
+            <h3>Prévisions sur 7 jours</h3>
+            <div class="daily-grid" id="dailyGrid"></div>
+          </section>
+
+          <section class="hourly-section">
+            <h3>Prévisions horaires <span class="range-label" id="hourlyRangeLabel">(24 h)</span></h3>
+            <div class="hourly-scroll" id="hourlyScroll"></div>
+          </section>
+        </div>
+        </div>
+
+        <div id="stationsView" class="hidden">
+          <div class="station-api-notice hidden" id="stationApiNotice">
+            Les mesures en direct nécessitent une clé API DPObs.
+            Abonnez-vous à <strong>Données d'observation</strong> sur
+            <a href="https://portail-api.meteofrance.fr" target="_blank" rel="noopener">portail-api.meteofrance.fr</a>
+            puis ajoutez <code>METEOFRANCE_API_KEY</code> dans votre fichier <code>.env</code>.
+          </div>
+
+          <form class="station-search-form" id="stationSearchForm">
+            <input type="search" id="stationSearchInput" placeholder="Nom de station (ex. Toulouse, Brest)…" autocomplete="off" />
+            <select id="stationDeptFilter" aria-label="Département">
+              <option value="">Tous départements</option>
+            </select>
+            <button type="button" class="btn-icon" id="stationGeoBtn" title="Stations proches">📍</button>
+            <button type="submit" class="btn-search">Chercher</button>
+          </form>
+
+          <div class="favorites-bar hidden" id="stationFavoritesBar">
+            <span class="favorites-label">Favoris</span>
+            <div class="favorites-list" id="stationFavoritesList"></div>
+          </div>
+
+          <div class="stations-layout">
+            <div class="station-list-panel">
+              <div class="station-welcome" id="stationWelcome">
+                <p>Recherchez parmi <strong>14 000+</strong> stations Météo France pour consulter les mesures réelles (température, vent, pluie…).</p>
+              </div>
+              <div class="station-map-wrap hidden" id="stationResultsMapWrap">
+                <div id="stationResultsMap" class="station-map station-map--compact" role="img" aria-label="Carte des stations trouvées"></div>
+              </div>
+              <div class="station-results" id="stationResults"></div>
+            </div>
+
+            <div class="station-detail-panel hidden" id="stationDetailView">
+              <div class="skeleton station-sk" id="stationLoading">
+                <div class="sk-line sk-title"></div>
+                <div class="sk-line sk-sub"></div>
+              </div>
+              <div class="station-error hidden" id="stationError" role="alert"></div>
+              <div id="stationDetail"></div>
+
+              <div class="station-map-wrap hidden" id="stationDetailMapWrap">
+                <div id="stationDetailMap" class="station-map" role="img" aria-label="Localisation de la station"></div>
+                <a id="stationOsmLink" class="station-osm-link" href="#" target="_blank" rel="noopener noreferrer">Ouvrir dans OpenStreetMap</a>
+              </div>
+
+              <div class="station-obs-section">
+                <div class="section-header">
+                  <h3>Mesures en direct</h3>
+                  <div class="range-toggle" id="stationTypeToggle" role="group">
+                    <button type="button" class="range-btn active" data-type="hourly">Horaire</button>
+                    <button type="button" class="range-btn" data-type="6m">6 min</button>
+                  </div>
+                </div>
+                <div id="stationObsCurrent"></div>
+              </div>
+
+              <div class="station-history-section">
+                <div class="section-header">
+                  <h3>Historique</h3>
+                  <div class="range-toggle" id="stationRangeToggle" role="group">
+                    <button type="button" class="range-btn active" data-range="24">24 h</button>
+                    <button type="button" class="range-btn" data-range="48">48 h</button>
+                  </div>
+                </div>
+                <div id="stationChartContainer"></div>
+                <div id="stationTopTemps"></div>
+                <div id="stationObsHistory"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer class="footer">
+        <p>
+          Données fournies par
+          <a href="https://portail-api.meteofrance.fr" target="_blank" rel="noopener">Météo France</a>
+        </p>
+        <p class="footer-copy">© 2026 PetiK</p>
+      </footer>
+    </div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="/js/app.js" type="module"></script>
+  </body>
+</html>
