@@ -5,7 +5,7 @@ let stations = [];
 let loadedAt = 0;
 const CACHE_TTL = 24 * 60 * 60 * 1000;
 
-function parseCsvLine(line) {
+export function parseCsvLine(line) {
   const result = [];
   let current = "";
   let inQuotes = false;
@@ -24,7 +24,7 @@ function parseCsvLine(line) {
   return result;
 }
 
-function normalizeStation(row) {
+export function normalizeStation(row) {
   const id = String(row.id || "").padStart(8, "0");
   return {
     id,

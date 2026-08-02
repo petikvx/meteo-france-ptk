@@ -1,6 +1,6 @@
 const DPOBS_BASE = "https://public-api.meteofrance.fr/public/DPObs/v1";
 
-function normalizeObservation(raw) {
+export function normalizeObservation(raw) {
   const data = Array.isArray(raw) ? raw[0] : raw?.properties ? raw.properties : raw;
   if (!data) return null;
 

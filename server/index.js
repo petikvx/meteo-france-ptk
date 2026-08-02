@@ -1,4 +1,5 @@
 import express from "express";
+import { rateLimit } from "express-rate-limit";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -25,6 +26,22 @@ const TOKEN =
   "__Wj7dVSTjV9YGu1guveLyDq0g7S7TfTjaHBTPTpO0kj8__";
 const API_KEY = process.env.METEOFRANCE_API_KEY || "";
 const API_BASE = "https://webservice.meteofrance.com";
+
+// Configuration du rate-limiting : 100 requêtes par 15 min par IP
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Trop de requêtes, veuillez réessayer plus tard." },
+});
+
+// Cache en mémoire pour les prévisions (15 minutes)
+const forecastCache = new Map();
+const CACHE_FORECAST_TTL = 15 * 60 * 1000;
+
+// Application du rate-limiting sur toutes les routes API
+app.use("/api/", limiter);
 
 app.use(express.static(path.join(__dirname, "../public"), {
   setHeaders(res, filePath) {
@@ -74,7 +91,16 @@ app.get("/api/forecast", async (req, res) => {
     if (!lat || !lon) {
       return res.status(400).json({ error: "Paramètres 'lat' et 'lon' requis" });
     }
+
+    const cacheKey = `${lat},${lon}`;
+    const cached = forecastCache.get(cacheKey);
+
+    if (cached && Date.now() - cached.timestamp < CACHE_FORECAST_TTL) {
+      return res.json(cached.data);
+    }
+
     const data = await fetchMeteo("forecast", { lat, lon, lang: "fr" });
+    forecastCache.set(cacheKey, { data, timestamp: Date.now() });
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
