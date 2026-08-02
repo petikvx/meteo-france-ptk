@@ -6,9 +6,20 @@ Application web personnelle de consultation météo, basée sur les APIs officie
 ![Express](https://img.shields.io/badge/Express-4-blue)
 ![Licence](https://img.shields.io/badge/licence-MIT-lightgrey)
 
+## Aperçu
+
+Voici quelques captures d'écran de l'application :
+
+| Prévisions | Vigilance |
+| :---: | :---: |
+| ![Prévisions](screenshot/Screenshot%20from%202026-08-02%2019-10-55.png) | ![Vigilance](screenshot/Screenshot%20from%202026-08-02%2019-11-00.png) |
+
+| Stations | Détails |
+| :---: | :---: |
+| ![Stations](screenshot/Screenshot%20from%202026-08-02%2019-11-24.png) | ![Détails](screenshot/Screenshot%20from%202026-08-02%2019-11-37.png) |
+
 ---
 
-## Fonctionnalités
 
 ### Onglet Prévisions
 
